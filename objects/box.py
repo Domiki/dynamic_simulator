@@ -1,15 +1,19 @@
-from base_object import BaseObject
 from vpython import *
+from typing import Union, Iterable
+
+from objects import BaseObject
 
 class Box(BaseObject):
     def __init__(self,
-                 pos: tuple[float],
+                 simul,
+                 pos: Union[vector, Iterable]=(0, 0, 0),
+                 dir: Union[vector, Iterable]=(0, 0, 0),
                  mass: float=1,
-                 col: color=color.black,
-                 dir: tuple[float]=(0, 0, 0),
+                 col: color=color.white,
                  pos_fixed: bool=False,
                  rot_fixed: bool=False):
         super().__init__(
+            simul=simul,
             pos=pos,
             mass=mass,
             col=col,

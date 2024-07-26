@@ -1,12 +1,15 @@
 from vpython import *
+import torch
 
 from simulation import Simulation
-from box import Box
-from ball_joint import BallJoint
+from objects import *
+from joints import *
+
+torch.set_default_device('cuda')
+torch.set_default_dtype(torch.float64)
 
 scene = canvas(width=800, height=800)
-simul = Simulation(fps=1000)
-simul.pause = True
+simul = Simulation(fps=60)
 
 def key_input(ev):
     s = ev.key
@@ -17,23 +20,11 @@ def key_input(ev):
 
 scene.bind('keydown', key_input)
 
-box1 = Box((0, 0, 0), 1, color.green, pos_fixed=True)
-box2 = Box((5, 0, 5), 1, color.blue)
-box3 = Box((0, -5, 5), 1, color.red)
+########################## Make your own configs here ##########################
+box1 = Box(simul, pos=(0, 0, 0), col=color.blue, pos_fixed=True)
+box2 = Box(simul, pos=(5, 0, 0), col=color.blue)
 
-joint1 = BallJoint(box1, box2, (5, 0, 0), 1, color.gray(0.5))
-joint2 = BallJoint(box2, box3, (5, -5, 5), 1, color.gray(0.5))
+HingeJoint(simul, box1, box2, pos=(2.5, 0, 0), axis=(0, 0, 1))
+################################################################################
 
-simul.add_object(box1)
-simul.add_object(box2)
-simul.add_object(box3)
-
-simul.add_joint(joint1)
-simul.add_joint(joint2)
-
-while simul.running:
-    if not simul.pause:
-        simul.update()
-    rate(simul.fps)
-
-    
+simul.run()
