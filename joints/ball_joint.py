@@ -41,8 +41,8 @@ class BallJoint(BaseJoint):
     @property
     def g(self) -> torch.Tensor:
         return \
-            self._obj1.pos_tensor + self._obj1.rot_mat @ self._pos_from_obj1 \
-          - self._obj2.pos_tensor - self._obj2.rot_mat @ self._pos_from_obj2
+            (self._obj1.pos_tensor + self._obj1.rot_mat @ self._pos_from_obj1) \
+          - (self._obj2.pos_tensor + self._obj2.rot_mat @ self._pos_from_obj2)
 
     @property
     def G(self) -> torch.Tensor:
@@ -51,20 +51,12 @@ class BallJoint(BaseJoint):
         idx1 = self._obj1.index
         idx2 = self._obj2.index
 
-        pos_from_obj1 = torch.as_tensor(self._ball.pos.value) - self._obj1.pos_tensor
-        pos_from_obj2 = torch.as_tensor(self._ball.pos.value) - self._obj2.pos_tensor
+        pos_from_obj1 = \
+            torch.as_tensor(self._ball.pos.value) - self._obj1.pos_tensor
+        pos_from_obj2 = \
+            torch.as_tensor(self._ball.pos.value) - self._obj2.pos_tensor
 
         # translation constraints
-        # res[:, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
-        #     self._obj1.lin_vel_coeff_mat,
-        #     -skew_matrix(self._obj1.rot_mat @ self._pos_from_obj1)
-        # ], axis=1)
-
-        # res[:, 6 * idx2: 6 * idx2 + 6] = torch.concatenate([
-        #     -self._obj2.lin_vel_coeff_mat,
-        #     skew_matrix(self._obj2.rot_mat @ self._pos_from_obj2)
-        # ], axis=1)
-
         res[0:3, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             self._obj1.lin_vel_coeff_mat,
             -skew_matrix(pos_from_obj1) @ self._obj1.ang_vel_coeff_mat

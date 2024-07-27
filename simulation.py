@@ -15,7 +15,6 @@ class Simulation:
         self._M = None
         
         self._Lambda = 1 / (1 + 4 * fps)
-        self._epsilon = None
     
     @property
     def fps(self) -> int:
@@ -58,11 +57,6 @@ class Simulation:
             ]) for i, obj in enumerate(self._object_list)
         ])
 
-        g = torch.hstack([
-            joint.g for joint in self._joint_list
-        ])
-        self._epsilon = torch.diag(g)
-
     def add_object(self, object: BaseObject) -> int:
         self._object_list.append(object)
         return len(self._object_list) - 1
@@ -86,19 +80,34 @@ class Simulation:
 
         V_q = torch.zeros((6 * self.num_objects, 1))
         for i, obj in enumerate(self._object_list):
-            V_q[6 * i + 1][0] = (0 if obj.pos_fixed else obj.mass) * 9.81
+            V_q[6 * i + 1][0] = (0 if obj.pos_fixed else obj.mass) * 9.80665
+
+        epsilon = torch.diag(g.squeeze())
 
         L_mat = torch.vstack([
             torch.hstack([self._M, -G.T]),
-            torch.hstack([G, self._epsilon])
+            torch.hstack([G, epsilon])
         ])
+
+        L_mat = torch.round(L_mat, decimals=8)
+
+        L_mat_nonzero_cols = torch.any(L_mat != 0, dim=0).nonzero()
+
+        sub_L_mat = L_mat[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)]
+        sub_L_mat_inv = torch.linalg.inv(sub_L_mat)
+
+        L_mat_inv = torch.zeros_like(L_mat)
+        L_mat_inv[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)] = \
+            sub_L_mat_inv
 
         R_mat = torch.vstack([
             self._M @ v - self.h * V_q,
-            -4 * self._Lambda / self.h * g +  self._Lambda * G @ v
+            -4 * self._Lambda / self.h * g + self._Lambda * G @ v
         ])
 
-        result = torch.squeeze(torch.linalg.inv(L_mat) @ R_mat)
+        R_mat = torch.round(R_mat, decimals=8)
+
+        result = torch.round(torch.squeeze(L_mat_inv @ R_mat), decimals=8)
         for i, obj in enumerate(self._object_list):
             v_next = result[i * 6:(i + 1) * 6]
             q_next = obj.q + self.h * v_next
