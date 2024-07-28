@@ -2,6 +2,7 @@ from vpython import *
 from typing import Union, Iterable
 
 from objects import BaseObject
+from utils import convert_to_vector
 
 class Box(BaseObject):
     def __init__(self,
@@ -23,4 +24,8 @@ class Box(BaseObject):
         )
 
         size = vector(mass, mass, mass)
-        self._obj = box(pos=self._pos, color=col, size=size)
+        self._obj = box(
+            pos=convert_to_vector(self._pos),
+            color=col,
+            size=size
+        )

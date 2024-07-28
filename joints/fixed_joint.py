@@ -3,7 +3,7 @@ from vpython import *
 
 from objects import BaseObject
 from joints import BaseJoint
-from utils import skew_matrix
+from utils import convert_to_vector, skew_matrix
 
 class FixedJoint(BaseJoint):
     def __init__(self,
@@ -18,14 +18,14 @@ class FixedJoint(BaseJoint):
             obj2=obj2
         )
         mid_pos = (obj1.pos + obj2.pos) / 2
-        self._pos_from_obj1 = torch.as_tensor((mid_pos - obj1.pos).value)
-        self._pos_from_obj2 = torch.as_tensor((mid_pos - obj2.pos).value)
-        self._obj1_init_dir = obj1.dir_tensor
-        self._obj2_init_dir = obj2.dir_tensor
+        self._pos_from_obj1 = mid_pos - obj1.pos
+        self._pos_from_obj2 = mid_pos - obj2.pos
+        self._obj1_init_dir = obj1.dir
+        self._obj2_init_dir = obj2.dir
 
         self._arm = cylinder(
-            pos=obj1.pos,
-            axis=obj2.pos - obj1.pos,
+            pos=convert_to_vector(obj1.pos),
+            axis=convert_to_vector(obj2.pos - obj1.pos),
             radius=size,
             color=col
         )
@@ -33,12 +33,12 @@ class FixedJoint(BaseJoint):
     @property
     def g(self) -> torch.Tensor:
         g1 = \
-            (self._obj1.pos_tensor + self._obj1.rot_mat @ self._pos_from_obj1) \
-          - (self._obj2.pos_tensor + self._obj2.rot_mat @ self._pos_from_obj2)
+            (self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1) \
+          - (self._obj2.pos + self._obj2.rot_mat @ self._pos_from_obj2)
 
         g2 = \
-            (self._obj1.dir_tensor - self._obj1_init_dir) \
-          - (self._obj2.dir_tensor - self._obj2_init_dir)
+            (self._obj1.dir - self._obj1_init_dir) \
+          - (self._obj2.dir - self._obj2_init_dir)
         
         return torch.hstack([g1, g2])
 
@@ -49,9 +49,9 @@ class FixedJoint(BaseJoint):
         idx1 = self._obj1.index
         idx2 = self._obj2.index
 
-        mid_pos = (self._obj1.pos_tensor + self._obj2.pos_tensor) / 2
-        pos_from_obj1 = mid_pos - self._obj1.pos_tensor
-        pos_from_obj2 = mid_pos - self._obj2.pos_tensor
+        mid_pos = (self._obj1.pos + self._obj2.pos) / 2
+        pos_from_obj1 = mid_pos - self._obj1.pos
+        pos_from_obj2 = mid_pos - self._obj2.pos
 
         # translation constraints
         res[0:3, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
@@ -67,16 +67,16 @@ class FixedJoint(BaseJoint):
         # rotation constraints
         res[3:6, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
-            torch.eye(3)
+            torch.eye(3) if not self._obj1.rot_fixed else torch.zeros((3, 3))
         ], axis=1)
 
         res[3:6, 6 * idx2: 6 * idx2 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
-            -torch.eye(3)
+            -torch.eye(3) if not self._obj2.rot_fixed else torch.zeros((3, 3))
         ], axis=1)
 
         return res
     
     def update(self):
-        self._arm.pos = self._obj1.pos
-        self._arm.axis = self._obj2.pos - self._obj1.pos
+        self._arm.pos = convert_to_vector(self._obj1.pos)
+        self._arm.axis = convert_to_vector(self._obj2.pos - self._obj1.pos)

@@ -2,7 +2,7 @@ import torch
 from vpython import *
 from typing import Union, Iterable
 
-from utils import convert_to_vector
+from utils import convert_to_tensor, convert_to_vector
 
 class BaseObject:
     def __init__(self,
@@ -15,10 +15,10 @@ class BaseObject:
                  rot_fixed: bool=False):
         self._simul = simul
 
-        self._pos = convert_to_vector(pos)
-        self._pos_before = vector(self._pos)
-        self._dir = convert_to_vector(dir)
-        self._dir_before = vector(self._dir)
+        self._pos = convert_to_tensor(pos)
+        self._pos_before = self._pos.clone()
+        self._dir = convert_to_tensor(dir)
+        self._dir_before = self._dir.clone()
         
         self._mass = mass
         self._color = col
@@ -29,36 +29,20 @@ class BaseObject:
     
     # Spatial properties
     @property
-    def pos(self) -> vector:
+    def pos(self) -> torch.Tensor:
         return self._pos
-    
-    @property
-    def pos_tensor(self) -> torch.Tensor:
-        return torch.as_tensor(self._pos.value)
 
     @property
-    def dir(self) -> vector:
+    def dir(self) -> torch.Tensor:
         return self._dir
     
     @property
-    def dir_tensor(self) -> torch.Tensor:
-        return torch.as_tensor(self._dir.value)
-    
-    @property
-    def lin_vel(self) -> vector:
+    def lin_vel(self) -> torch.Tensor:
         return (self._pos - self._pos_before) / self._simul.h
     
     @property
-    def lin_vel_tensor(self) -> torch.Tensor:
-        return torch.as_tensor(self.lin_vel.value)
-    
-    @property
-    def ang_vel(self) -> vector:
+    def ang_vel(self) -> torch.Tensor:
         return (self._dir - self._dir_before) / self._simul.h
-    
-    @property
-    def ang_vel_tensor(self) -> vector:
-        return torch.as_tensor(self.ang_vel.value)
     
     @property
     def pos_fixed(self) -> bool:
@@ -69,17 +53,17 @@ class BaseObject:
         return self._rot_fixed
     
     @pos.setter
-    def pos(self, value: vector) -> None:
-        self._pos_before = vector(self._pos)
-        self._pos = vector(value)
-        self._obj.pos = self._pos
+    def pos(self, value: Union[vector, Iterable]) -> None:
+        self._pos_before = self._pos.clone()
+        self._pos = convert_to_tensor(value)
+        self._obj.pos = convert_to_vector(self._pos)
     
     @dir.setter
-    def dir(self, value: vector) -> None:
-        self._dir_before = vector(self._dir)
-        self._dir = vector(value)
-        self._obj.up = vector(*self.rot_mat[:, 1])
-        self._obj.axis = vector(*self.rot_mat[:, 0])
+    def dir(self, value: Union[vector, Iterable]) -> None:
+        self._dir_before = self._dir.clone()
+        self._dir = convert_to_tensor(value)
+        self._obj.up = convert_to_vector(self.rot_mat[:, 1])
+        self._obj.axis = convert_to_vector(self.rot_mat[:, 0])
 
     # Object properties
     @property
@@ -101,11 +85,11 @@ class BaseObject:
     # Dynamic properties
     @property
     def q(self) -> torch.Tensor:
-        return torch.concatenate([self.pos_tensor, self.dir_tensor])
+        return torch.concatenate([self.pos, self.dir])
     
     @property
     def v(self) -> torch.Tensor:
-        return torch.concatenate([self.lin_vel_tensor, self.ang_vel_tensor])
+        return torch.concatenate([self.lin_vel, self.ang_vel])
     
     # Matrix porperties
     @property
@@ -120,7 +104,7 @@ class BaseObject:
         if self._rot_fixed:
             return torch.zeros((3, 3))
 
-        x, y, z = self._dir.value
+        x, y, z = self._dir
         return torch.as_tensor([
             [0, cos(x),  sin(y) * sin(x)],
             [0, sin(x), -sin(y) * cos(x)],
@@ -129,7 +113,7 @@ class BaseObject:
     
     @property
     def rot_mat(self) -> torch.Tensor:
-        x, y, z = self._dir.value
+        x, y, z = self._dir
         return torch.as_tensor([
             [
                  cos(z) * cos(x) - cos(y) * sin(x) * sin(z),
@@ -153,5 +137,5 @@ class BaseObject:
         _pos = q[0:3]
         _dir = q[3:6]
 
-        self.pos = vector(*_pos)
-        self.dir = vector(*_dir)
+        self.pos = convert_to_vector(_pos)
+        self.dir = convert_to_vector(_dir)
