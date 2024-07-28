@@ -55,9 +55,10 @@ class HingeJoint(BaseJoint):
             (self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1) \
           - (self._obj2.pos + self._obj2.rot_mat @ self._pos_from_obj2)
         
-        g2 = \
-            self._obj1.rot_mat @ self._axis_from_obj1 \
-          - self._obj2.rot_mat @ self._axis_from_obj2
+        g2 = torch.cross(
+            self._obj1.rot_mat @ self._axis_from_obj1,
+            self._obj2.rot_mat @ self._axis_from_obj2
+        )
         
         return torch.hstack([g1, g2])
     
@@ -99,13 +100,16 @@ class HingeJoint(BaseJoint):
         return res
     
     def update(self):
-        pos_next = self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1
+        self._pos = self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1
+        # self._axis = self._obj1.rot_mat @ self._axis
+        # self._axis_from_obj1 = self._axis.clone()
+        # self._axis_form_obj2 = self._axis.clone()
 
-        self._hinge.pos = convert_to_vector(pos_next - self._axis / 2)
-        self._hinge.axis = convert_to_vector(self._obj1.rot_mat @ self._axis)
+        self._hinge.pos = convert_to_vector(self._pos - self._axis / 2)
+        self._hinge.axis = convert_to_vector(self._axis)
 
-        self._arm1.pos = convert_to_vector((pos_next + self._obj1.pos) / 2)
-        self._arm1.axis = convert_to_vector(self._obj1.pos - pos_next)
+        self._arm1.pos = convert_to_vector((self._pos + self._obj1.pos) / 2)
+        self._arm1.axis = convert_to_vector(self._obj1.pos - self._pos)
 
-        self._arm2.pos = convert_to_vector((pos_next + self._obj2.pos) / 2)
-        self._arm2.axis = convert_to_vector(self._obj2.pos - pos_next)
+        self._arm2.pos = convert_to_vector((self._pos + self._obj2.pos) / 2)
+        self._arm2.axis = convert_to_vector(self._obj2.pos - self._pos)

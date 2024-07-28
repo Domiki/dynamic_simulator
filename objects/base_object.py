@@ -63,7 +63,7 @@ class BaseObject:
         self._dir_before = self._dir.clone()
         self._dir = convert_to_tensor(value)
         self._obj.up = convert_to_vector(self.rot_mat[:, 1])
-        self._obj.axis = convert_to_vector(self.rot_mat[:, 0])
+        self._obj.axis = convert_to_vector(self.rot_mat[:, 0]) * self._mass
 
     # Object properties
     @property

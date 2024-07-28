@@ -23,9 +23,10 @@ class Box(BaseObject):
             rot_fixed=rot_fixed
         )
 
-        size = vector(mass, mass, mass)
         self._obj = box(
             pos=convert_to_vector(self._pos),
             color=col,
-            size=size
+            length=mass,
+            height=mass,
+            width=mass
         )

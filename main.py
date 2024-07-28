@@ -23,10 +23,9 @@ scene.bind('keydown', key_input)
 
 ########################## Make your own configs here ##########################
 box1 = Box(simul, pos=(0, 0, 0), col=color.blue, pos_fixed=True)
-box2 = Box(simul, pos=(10, 0, 0), col=color.green)
+box2 = Box(simul, pos=(4, 0, 0), col=color.green)
 
-# FixedJoint(simul, box1, box2)
-HingeJoint(simul, box1, box2, pos=(5, 0, 0), axis=(0, 0, 1))
+HingeJoint(simul, box1, box2, pos=(2, 0, 0), axis=(0, 0, 1))
 ################################################################################
 
 simul.run()

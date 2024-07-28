@@ -97,14 +97,15 @@ class Simulation:
             torch.hstack([G, self._epsilon_mat])
         ])
 
-        L_mat_nonzero_cols = torch.any(L_mat > self._epsilon, dim=0).nonzero()
+        # L_mat_nonzero_cols = torch.any(L_mat > self._epsilon, dim=0).nonzero()
 
-        sub_L_mat = L_mat[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)]
-        sub_L_mat_inv = torch.linalg.inv(sub_L_mat)
+        # sub_L_mat = L_mat[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)]
+        # sub_L_mat_inv = torch.linalg.inv(sub_L_mat)
 
-        L_mat_inv = torch.zeros_like(L_mat)
-        L_mat_inv[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)] = \
-            sub_L_mat_inv
+        # L_mat_inv = torch.zeros_like(L_mat)
+        # L_mat_inv[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)] = \
+        #     sub_L_mat_inv
+        L_mat_inv = torch.linalg.inv(L_mat)
 
         R_mat = torch.vstack([
             self._M @ v - self.h * V_q,
@@ -126,5 +127,5 @@ class Simulation:
         while self.running:
             if not self.pause:
                 self.update()
-                print(torch.norm(self._joint_list[0]._obj2.pos - self._joint_list[0]._obj1.pos))
+                # print(torch.norm(self._joint_list[0]._obj2.pos - self._joint_list[0]._obj1.pos))
             rate(self.fps)
