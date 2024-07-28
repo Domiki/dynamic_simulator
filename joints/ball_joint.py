@@ -45,8 +45,8 @@ class BallJoint(BaseJoint):
     @property
     def g(self) -> torch.Tensor:
         return \
-            (self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1) \
-          - (self._obj2.pos + self._obj2.rot_mat @ self._pos_from_obj2)
+            self._obj1.to_global(self._pos_from_obj1) \
+          - self._obj2.to_global(self._pos_from_obj2)
 
     @property
     def G(self) -> torch.Tensor:
@@ -72,7 +72,7 @@ class BallJoint(BaseJoint):
         return res
     
     def update(self):
-        self._pos = self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1
+        self._pos = self._obj1.to_global(self._pos_from_obj1)
         self._ball.pos = convert_to_vector(self._pos)
 
         self._arm1.pos = convert_to_vector(self._pos)

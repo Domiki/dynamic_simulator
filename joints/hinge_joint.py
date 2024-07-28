@@ -25,8 +25,8 @@ class HingeJoint(BaseJoint):
         self._pos_from_obj2 = self._pos - obj2.pos
 
         self._axis = convert_to_tensor(axis) * size
-        self._axis_from_obj1 = obj1.rot_mat.T @ self._axis
-        self._axis_from_obj2 = obj2.rot_mat.T @ self._axis
+        self._axis_from_obj1 = obj1.rotate_to_local(self._axis)
+        self._axis_from_obj2 = obj2.rotate_to_local(self._axis)
 
         self._hinge = cylinder(
             pos=convert_to_vector(self._pos - self._axis / 2),
@@ -37,27 +37,27 @@ class HingeJoint(BaseJoint):
         self._arm1 = box(
             pos=convert_to_vector((self._pos + obj1.pos) / 2),
             axis=convert_to_vector(obj1.pos - self._pos),
-            width=size,
-            height=size / 5,
+            width=size / 5,
+            height=size,
             color=obj1.color
         )
         self._arm2 = box(
             pos=convert_to_vector((self._pos + obj2.pos) / 2),
             axis=convert_to_vector(obj2.pos - self._pos),
-            width=size,
-            height=size / 5,
+            width=size / 5,
+            height=size,
             color=obj2.color
         )
 
     @property
     def g(self) -> torch.Tensor:
         g1 = \
-            (self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1) \
-          - (self._obj2.pos + self._obj2.rot_mat @ self._pos_from_obj2)
+            self._obj1.to_global(self._pos_from_obj1) \
+          - self._obj2.to_global(self._pos_from_obj2)
         
-        g2 = torch.cross(
-            self._obj1.rot_mat @ self._axis_from_obj1,
-            self._obj2.rot_mat @ self._axis_from_obj2
+        g2 = torch.linalg.cross(
+            self._obj1.rotate_to_global(self._axis_from_obj1),
+            self._obj2.rotate_to_global(self._axis_from_obj2)
         )
         
         return torch.hstack([g1, g2])
@@ -89,27 +89,27 @@ class HingeJoint(BaseJoint):
         
         res[3:6, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
-            obj1_axis_skew @ self._obj1.ang_vel_coeff_mat
+            torch.diag(self._obj1.rotate_to_global(self._axis_from_obj1))
         ], axis=1)
 
         res[3:6, 6 * idx2: 6 * idx2 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
-            -obj2_axis_skew @ self._obj2.ang_vel_coeff_mat
+            -torch.diag(self._obj2.rotate_to_global(self._axis_from_obj2))
         ], axis=1)
 
         return res
     
     def update(self):
-        self._pos = self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1
-        # self._axis = self._obj1.rot_mat @ self._axis
-        # self._axis_from_obj1 = self._axis.clone()
-        # self._axis_form_obj2 = self._axis.clone()
+        self._pos = self._obj1.to_global(self._pos_from_obj1)
+        self._axis = self._obj1.rotate_to_global(self._axis_from_obj1)
 
         self._hinge.pos = convert_to_vector(self._pos - self._axis / 2)
         self._hinge.axis = convert_to_vector(self._axis)
 
         self._arm1.pos = convert_to_vector((self._pos + self._obj1.pos) / 2)
         self._arm1.axis = convert_to_vector(self._obj1.pos - self._pos)
+        self._arm1.up = convert_to_vector(self._axis)
 
         self._arm2.pos = convert_to_vector((self._pos + self._obj2.pos) / 2)
         self._arm2.axis = convert_to_vector(self._obj2.pos - self._pos)
+        self._arm2.up = convert_to_vector(self._axis)

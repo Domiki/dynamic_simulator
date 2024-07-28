@@ -33,8 +33,8 @@ class FixedJoint(BaseJoint):
     @property
     def g(self) -> torch.Tensor:
         g1 = \
-            (self._obj1.pos + self._obj1.rot_mat @ self._pos_from_obj1) \
-          - (self._obj2.pos + self._obj2.rot_mat @ self._pos_from_obj2)
+            self._obj1.to_global(self._pos_from_obj1) \
+          - self._obj2.to_global(self._pos_from_obj2)
 
         g2 = \
             (self._obj1.dir - self._obj1_init_dir) \

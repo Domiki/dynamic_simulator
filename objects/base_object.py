@@ -132,6 +132,19 @@ class BaseObject:
             ],
         ])
 
+    # transform functions
+    def to_local(self, point: torch.Tensor) -> torch.Tensor:
+        return self.rot_mat.T @ (point - self.pos)
+    
+    def to_global(self, point: torch.Tensor) -> torch.Tensor:
+        return self.pos + self.rot_mat @ point
+    
+    def rotate_to_local(self, point: torch.Tensor) -> torch.Tensor:
+        return self.rot_mat.T @ point
+    
+    def rotate_to_global(self, point: torch.Tensor) -> torch.Tensor:
+        return self.rot_mat @ point
+
     # Update function
     def update(self, q: torch.Tensor) -> None:
         _pos = q[0:3]

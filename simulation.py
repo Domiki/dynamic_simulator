@@ -3,6 +3,7 @@ from vpython import rate
 
 from objects import BaseObject
 from joints import BaseJoint
+from utils import solve
 
 class Simulation:
     def __init__(self, fps: int, pause: bool=False):
@@ -76,6 +77,7 @@ class Simulation:
         return len(self._joint_list) - 1
 
     def update(self):
+        # DELE를 계산하기 위한 요소 생성
         v = torch.hstack([
             obj.v for obj in self._object_list
         ]).reshape(-1, 1)
@@ -92,27 +94,21 @@ class Simulation:
         for i, obj in enumerate(self._object_list):
             V_q[6 * i + 1][0] = (0 if obj.pos_fixed else obj.mass) * 9.80665
 
-        L_mat = torch.vstack([
+        # Ax=B 행렬 생성
+        A = torch.vstack([
             torch.hstack([self._M, -G.T]),
             torch.hstack([G, self._epsilon_mat])
         ])
 
-        # L_mat_nonzero_cols = torch.any(L_mat > self._epsilon, dim=0).nonzero()
-
-        # sub_L_mat = L_mat[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)]
-        # sub_L_mat_inv = torch.linalg.inv(sub_L_mat)
-
-        # L_mat_inv = torch.zeros_like(L_mat)
-        # L_mat_inv[L_mat_nonzero_cols, L_mat_nonzero_cols.reshape(-1,)] = \
-        #     sub_L_mat_inv
-        L_mat_inv = torch.linalg.inv(L_mat)
-
-        R_mat = torch.vstack([
+        B = torch.vstack([
             self._M @ v - self.h * V_q,
             -4 * self._Lambda / self.h * g + self._Lambda * G @ v
         ])
 
-        result = torch.squeeze(L_mat_inv @ R_mat)
+        # 역행렬 계산
+        result = solve(A, B)
+
+        # 각 오브젝트 및 연결 요소에 대입
         for i, obj in enumerate(self._object_list):
             v_next = result[i * 6:(i + 1) * 6]
             q_next = obj.q + self.h * v_next
