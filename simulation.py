@@ -85,6 +85,10 @@ class Simulation:
         g = torch.hstack([
             joint.g for joint in self._joint_list
         ]).reshape(-1, 1)
+
+        f = torch.hstack([
+            obj.force for obj in self._object_list
+        ]).reshape(-1, 1)
         
         G = torch.vstack([
             joint.G for joint in self._joint_list
@@ -101,7 +105,7 @@ class Simulation:
         ])
 
         B = torch.vstack([
-            self._M @ v - self.h * V_q,
+            self._M @ v - self.h * V_q + self.h * f,
             -4 * self._Lambda / self.h * g + self._Lambda * G @ v
         ])
 

@@ -26,6 +26,7 @@ class BaseObject:
         self._rot_fixed = rot_fixed
         self._index = simul.add_object(self)
         self._obj: standardAttributes = None
+        self._force = torch.zeros((6,))
     
     # Spatial properties
     @property
@@ -131,6 +132,15 @@ class BaseObject:
                 cos(y)
             ],
         ])
+    
+    # external force
+    @property
+    def force(self) -> torch.Tensor:
+        return self._force
+    
+    @force.setter
+    def force(self, value: torch.Tensor) -> None:
+        self._force = value
 
     # transform functions
     def to_local(self, point: torch.Tensor) -> torch.Tensor:
