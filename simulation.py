@@ -123,5 +123,4 @@ class Simulation:
         while self.running:
             if not self.pause:
                 self.update()
-                # print(torch.norm(self._joint_list[0]._obj2.pos - self._joint_list[0]._obj1.pos))
             rate(self.fps)

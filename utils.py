@@ -21,7 +21,7 @@ def convert_to_vector(value: Iterable) -> vector:
     return vector(*value)
 
 def solve(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
-    P, L, U = torch.linalg.lu(A, pivot=False)
+    P, L, U = torch.linalg.lu(A)
 
     diag_U = torch.diag(U)
     zeros = torch.zeros_like(diag_U)

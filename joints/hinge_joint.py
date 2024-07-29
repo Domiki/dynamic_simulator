@@ -89,12 +89,12 @@ class HingeJoint(BaseJoint):
         
         res[3:6, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
-            torch.diag(self._obj1.rotate_to_global(self._axis_from_obj1))
+            obj2_axis_skew @ obj1_axis_skew @ self._obj1.ang_vel_coeff_mat
         ], axis=1)
 
         res[3:6, 6 * idx2: 6 * idx2 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
-            -torch.diag(self._obj2.rotate_to_global(self._axis_from_obj2))
+            -obj1_axis_skew @ obj2_axis_skew @ self._obj2.ang_vel_coeff_mat
         ], axis=1)
 
         return res
