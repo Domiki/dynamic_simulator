@@ -4,7 +4,7 @@ from vpython import *
 
 from objects import BaseObject
 from joints import BaseJoint
-from utils import convert_to_vector, convert_to_tensor, skew_matrix
+from utils import *
 
 class HingeJoint(BaseJoint):
     def __init__(self,
@@ -24,7 +24,8 @@ class HingeJoint(BaseJoint):
         self._pos_from_obj1 = self._pos - obj1.pos
         self._pos_from_obj2 = self._pos - obj2.pos
 
-        self._axis = convert_to_tensor(axis) * size
+        self._axis = convert_to_tensor(axis)
+        self._axis *= size / torch.norm(self._axis)
         self._axis_from_obj1 = obj1.rotate_to_local(self._axis)
         self._axis_from_obj2 = obj2.rotate_to_local(self._axis)
 
@@ -84,8 +85,8 @@ class HingeJoint(BaseJoint):
         ], axis=1)
 
         # rotation constraints
-        obj1_axis_skew = skew_matrix(self._obj1.rot_mat @ self._axis_from_obj1)
-        obj2_axis_skew = skew_matrix(self._obj2.rot_mat @ self._axis_from_obj2)
+        obj1_axis_skew = skew_matrix(self._obj1.to_global(self._axis_from_obj1))
+        obj2_axis_skew = skew_matrix(self._obj2.to_global(self._axis_from_obj2))
         
         res[3:6, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             torch.zeros((3, 3)),

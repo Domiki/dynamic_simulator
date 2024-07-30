@@ -4,7 +4,7 @@ from vpython import *
 
 from objects import BaseObject
 from joints import BaseJoint
-from utils import convert_to_tensor, convert_to_vector, skew_matrix
+from utils import *
 
 class BallJoint(BaseJoint):
     def __init__(self,
@@ -23,11 +23,10 @@ class BallJoint(BaseJoint):
         self._pos_from_obj1 = self._pos - obj1.pos
         self._pos_from_obj2 = self._pos - obj2.pos
 
-        size_vec = vector(size, size, size)
         self._ball = sphere(
             pos=convert_to_vector(self._pos),
             color=col,
-            size=size_vec * 2
+            size=vector(size, size, size) * 2
         )
         self._arm1 = cylinder(
             pos=convert_to_vector(self._pos),

@@ -2,7 +2,7 @@ from vpython import *
 from typing import Union, Iterable
 
 from objects import BaseObject
-from utils import convert_to_vector
+from utils import *
 
 class Box(BaseObject):
     def __init__(self,

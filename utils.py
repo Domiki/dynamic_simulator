@@ -2,6 +2,18 @@ import torch
 from typing import Union, Iterable
 from vpython import vector
 
+# convert functions
+def convert_to_tensor(vec: Union[vector, Iterable]) -> torch.Tensor:
+    if isinstance(vec, vector):
+        return torch.as_tensor(vec.value, dtype=torch.float64)
+    else:
+        return torch.as_tensor(vec, dtype=torch.float64)
+
+def convert_to_vector(value: Iterable[float]) -> vector:
+    assert len(value) == 3
+    return vector(*value)
+
+# matrix functions
 def skew_matrix(vec: torch.Tensor) -> torch.Tensor:
     x, y, z = vec
     return torch.as_tensor([
@@ -10,15 +22,19 @@ def skew_matrix(vec: torch.Tensor) -> torch.Tensor:
         [-y, x, 0],
     ])
 
-def convert_to_tensor(vec: Union[vector, Iterable]) -> torch.Tensor:
-    if isinstance(vec, vector):
-        return torch.as_tensor(vec.value, dtype=torch.float64)
-    else:
-        return torch.as_tensor(vec, dtype=torch.float64)
+# linalg functions
+def get_bases(bases: torch.Tensor) -> torch.Tensor:
+    n, dim = bases.size()
 
-def convert_to_vector(value: Iterable) -> vector:
-    assert len(value) == 3
-    return vector(*value)
+    for i in range(n):
+        for j in range(i + 1, n):
+            assert torch.dot(bases[i], bases[j]) != 0, "Bases not orthogonal"
+
+    A = torch.eye(dim)
+    A[:, :n] = bases.T
+
+    Q, R = torch.qr(A)
+    return Q.T
 
 def solve(A: torch.Tensor, B: torch.Tensor) -> torch.Tensor:
     P, L, U = torch.linalg.lu(A)

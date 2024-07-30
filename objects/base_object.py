@@ -2,7 +2,7 @@ import torch
 from vpython import *
 from typing import Union, Iterable
 
-from utils import convert_to_tensor, convert_to_vector
+from utils import *
 
 class BaseObject:
     def __init__(self,

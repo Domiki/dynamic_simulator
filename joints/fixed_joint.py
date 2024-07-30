@@ -3,7 +3,7 @@ from vpython import *
 
 from objects import BaseObject
 from joints import BaseJoint
-from utils import convert_to_vector, skew_matrix
+from utils import *
 
 class FixedJoint(BaseJoint):
     def __init__(self,
