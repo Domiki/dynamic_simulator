@@ -1,17 +1,21 @@
 import torch
+from typing import TYPE_CHECKING
 from vpython import rate
 
-from objects import BaseObject
-from joints import BaseJoint
 from utils import solve
+
+if TYPE_CHECKING:
+    from objects import BaseObject
+    from joints import BaseJoint
+
 
 class Simulation:
     def __init__(self, fps: int, pause: bool=False):
         self._fps = fps
         self._running = True
         self._pause = pause
-        self._object_list: list[BaseObject] = []
-        self._joint_list: list[BaseJoint] = []
+        self._object_list: list['BaseObject'] = []
+        self._joint_list: list['BaseJoint'] = []
 
         self._M = None
         self._epsilon_mat = None
@@ -68,11 +72,11 @@ class Simulation:
         self._epsilon_mat = torch.ones((len(g), len(g))) * self._epsilon
         self._lambda = torch.zeros((len(g),))
 
-    def add_object(self, object: BaseObject) -> int:
+    def add_object(self, object: 'BaseObject') -> int:
         self._object_list.append(object)
         return len(self._object_list) - 1
     
-    def add_joint(self, joint: BaseJoint) -> int:
+    def add_joint(self, joint: 'BaseJoint') -> int:
         self._joint_list.append(joint)
         return len(self._joint_list) - 1
 

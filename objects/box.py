@@ -1,12 +1,15 @@
+from typing import Union, Iterable, TYPE_CHECKING
 from vpython import *
-from typing import Union, Iterable
 
 from objects import BaseObject
 from utils import *
 
+if TYPE_CHECKING:
+    from simulation import Simulation
+
 class Box(BaseObject):
     def __init__(self,
-                 simul,
+                 simul: 'Simulation',
                  pos: Union[vector, Iterable]=(0, 0, 0),
                  dir: Union[vector, Iterable]=(0, 0, 0),
                  mass: float=1,

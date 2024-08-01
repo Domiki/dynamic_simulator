@@ -1,16 +1,19 @@
 import torch
-from typing import Union, Iterable
+from typing import Union, Iterable, TYPE_CHECKING
 from vpython import *
 
-from objects import BaseObject
 from joints import BaseJoint
 from utils import *
 
+if TYPE_CHECKING:
+    from simulation import Simulation
+    from objects import BaseObject
+
 class UniversalJoint(BaseJoint):
     def __init__(self,
-                 simul,
-                 obj1: BaseObject,
-                 obj2: BaseObject,
+                 simul: 'Simulation',
+                 obj1: 'BaseObject',
+                 obj2: 'BaseObject',
                  pos: Union[vector, Iterable]=(0, 0, 0),
                  axis: Union[vector, Iterable]=(1, 0, 0),
                  size: float=0.8,
@@ -27,12 +30,16 @@ class UniversalJoint(BaseJoint):
         # get universal joint's axises
         axis = convert_to_tensor(axis)
 
-        self._axis1 = torch.linalg.cross(self._pos_from_obj1, axis)
+        temp_axis = torch.linalg.cross(self._pos_from_obj1, axis)
+        self._axis1 = torch.linalg.cross(self._pos_from_obj1, temp_axis)
         self._axis2 = torch.linalg.cross(self._pos_from_obj2, self._axis1)
         self._axis1 *= size / torch.norm(self._axis1)
         self._axis2 *= size / torch.norm(self._axis2)
         self._axis1_from_obj1 = obj1.rotate_to_local(self._axis1)
         self._axis2_from_obj2 = obj2.rotate_to_local(self._axis2)
+
+        axes = torch.cat((self._axis1, self._axis2))
+        assert not torch.any(torch.isnan(axes)), "Axis error"
 
         self._cylinder1 = cylinder(
             pos=convert_to_vector(self._pos - self._axis1 / 2),
@@ -47,8 +54,8 @@ class UniversalJoint(BaseJoint):
             color=col
         )
 
-        width = size / 4
-        height = size / 10
+        width = size / 10
+        height = size / 4
         self._arm1_1 = box(
             pos=convert_to_vector((self._pos + obj1.pos + self._axis1) / 2),
             axis=convert_to_vector(obj1.pos - self._pos),
@@ -66,15 +73,15 @@ class UniversalJoint(BaseJoint):
         self._arm2_1 = box(
             pos=convert_to_vector((self._pos + obj2.pos + self._axis2) / 2),
             axis=convert_to_vector(obj2.pos - self._pos),
-            width=height,
-            height=width,
+            width=width,
+            height=height,
             color=obj2.color
         )
         self._arm2_2 = box(
             pos=convert_to_vector((self._pos + obj2.pos - self._axis2) / 2),
             axis=convert_to_vector(obj2.pos - self._pos),
-            width=height,
-            height=width,
+            width=width,
+            height=height,
             color=obj2.color
         )
 
@@ -113,25 +120,42 @@ class UniversalJoint(BaseJoint):
         ], axis=1)
 
         # rotation constraints
-        res[4, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
+        axis1 = self._obj1.rotate_to_global(self._axis1_from_obj1)
+        axis2 = self._obj2.rotate_to_global(self._axis2_from_obj2)
+
+        res[3, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             torch.zeros((3,)),
-            torch.dot()
+            -axis2 @ skew_matrix(axis1)
         ])
 
-        res[4, 6 * idx2: 6 * idx2 + 6] = torch.concatenate([
+        res[3, 6 * idx2: 6 * idx2 + 6] = torch.concatenate([
             torch.zeros((3,)),
-            torch.dot()
+            -axis1 @ skew_matrix(axis2)
         ])
 
         return res
     
     def update(self):
         self._pos = self._obj1.to_global(self._pos_from_obj1)
-        self._ball.pos = convert_to_vector(self._pos)
+        self._axis1 = self._obj1.rotate_to_global(self._axis1_from_obj1)
+        self._axis2 = self._obj2.rotate_to_global(self._axis2_from_obj2)
 
-        self._arm1.pos = convert_to_vector(self._pos)
-        self._arm1.axis = convert_to_vector(self._obj1.pos - self._pos)
+        self._cylinder1.pos = convert_to_vector(self._pos - self._axis1 / 2)
+        self._cylinder2.pos = convert_to_vector(self._pos - self._axis2 / 2)
+        self._cylinder1.axis = convert_to_vector(self._axis1)
+        self._cylinder2.axis = convert_to_vector(self._axis2)
 
-        self._arm2.pos = convert_to_vector(self._pos)
-        self._arm2.axis = convert_to_vector(self._obj2.pos - self._pos)
+        self._arm1_1.pos = \
+            convert_to_vector((self._pos + self._obj1.pos + self._axis1) / 2)
+        self._arm1_2.pos = \
+            convert_to_vector((self._pos + self._obj1.pos - self._axis1) / 2)
+        self._arm2_1.pos = \
+            convert_to_vector((self._pos + self._obj2.pos + self._axis2) / 2)
+        self._arm2_2.pos = \
+            convert_to_vector((self._pos + self._obj2.pos - self._axis2) / 2)
+        
+        self._arm1_1.axis = convert_to_vector(self._obj1.pos - self._pos)
+        self._arm1_2.axis = convert_to_vector(self._obj1.pos - self._pos)
+        self._arm2_1.axis = convert_to_vector(self._obj2.pos - self._pos)
+        self._arm2_2.axis = convert_to_vector(self._obj2.pos - self._pos)
     

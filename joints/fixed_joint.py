@@ -1,15 +1,19 @@
 import torch
+from typing import TYPE_CHECKING
 from vpython import *
 
-from objects import BaseObject
 from joints import BaseJoint
 from utils import *
 
+if TYPE_CHECKING:
+    from simulation import Simulation
+    from objects import BaseObject
+
 class FixedJoint(BaseJoint):
     def __init__(self,
-                 simul,
-                 obj1: BaseObject,
-                 obj2: BaseObject,
+                 simul: 'Simulation',
+                 obj1: 'BaseObject',
+                 obj2: 'BaseObject',
                  size: float=0.2,
                  col: color=color.white):
         super().__init__(

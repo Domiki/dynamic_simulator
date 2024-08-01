@@ -1,13 +1,16 @@
 import torch
+from typing import TYPE_CHECKING
 from vpython import *
 
-from objects import BaseObject
+if TYPE_CHECKING:
+    from simulation import Simulation
+    from objects import BaseObject
 
 class BaseJoint:
     def __init__(self,
-                 simul,
-                 obj1: BaseObject,
-                 obj2: BaseObject):
+                 simul: 'Simulation',
+                 obj1: 'BaseObject',
+                 obj2: 'BaseObject'):
         self._simul = simul
         self._index = simul.add_joint(self)
         self._obj1 = obj1

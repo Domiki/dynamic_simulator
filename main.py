@@ -1,5 +1,5 @@
-from vpython import *
 import torch
+from vpython import *
 
 from simulation import Simulation
 from objects import *
@@ -23,9 +23,9 @@ scene.bind('keydown', key_input)
 
 ########################## Make your own configs here ##########################
 box1 = Box(simul, pos=(0, 0, 0), col=color.blue, pos_fixed=True)
-box2 = Box(simul, pos=(4, 2, 4), col=color.green)
+box2 = Box(simul, pos=(0, 2, 2), col=color.green)
 
-UniversalJoint(simul, box1, box2, pos=(2, 0, 0), axis=(0, 0, 1))
+UniversalJoint(simul, box1, box2, pos=(0, 0, 2), axis=(1, 0, 0))
 ################################################################################
 
 simul.run()

@@ -1,16 +1,19 @@
 import torch
-from typing import Union, Iterable
+from typing import Union, Iterable, TYPE_CHECKING
 from vpython import *
 
-from objects import BaseObject
 from joints import BaseJoint
 from utils import *
 
+if TYPE_CHECKING:
+    from simulation import Simulation
+    from objects import BaseObject
+
 class HingeJoint(BaseJoint):
     def __init__(self,
-                 simul,
-                 obj1: BaseObject,
-                 obj2: BaseObject,
+                 simul: 'Simulation',
+                 obj1: 'BaseObject',
+                 obj2: 'BaseObject',
                  pos: Union[vector, Iterable]=(0, 0, 0),
                  axis: Union[vector, Iterable]=(1, 0, 0),
                  size: float=0.5,
@@ -85,8 +88,10 @@ class HingeJoint(BaseJoint):
         ], axis=1)
 
         # rotation constraints
-        obj1_axis_skew = skew_matrix(self._obj1.to_global(self._axis_from_obj1))
-        obj2_axis_skew = skew_matrix(self._obj2.to_global(self._axis_from_obj2))
+        obj1_axis_skew = \
+            skew_matrix(self._obj1.rotate_to_global(self._axis_from_obj1))
+        obj2_axis_skew = \
+            skew_matrix(self._obj2.rotate_to_global(self._axis_from_obj2))
         
         res[3:6, 6 * idx1: 6 * idx1 + 6] = torch.concatenate([
             torch.zeros((3, 3)),
